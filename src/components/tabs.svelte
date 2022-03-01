@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable  @typescript-eslint/no-explicit-any */
 	export let dict: { [key: string]: any };
 	export let component;
 	export let accessor = (x) => x;

@@ -96,7 +96,6 @@
 			console.error(`Incompatible lengths (${startFields.length} vs ${endFields.length})`);
 			// Jump straight to table
 			asCsv = false;
-			debugger;
 			return;
 		}
 

@@ -1,10 +1,10 @@
 <script lang="ts">
-	export let progress: number = 0;
-	export let done: boolean = false;
+	export let progress = 0;
+	export let done = false;
 </script>
 
-<div class="bar" class:done>
-	<div class="fill" style:width={`${progress * 100}%`} />
+<div class="bar">
+	<div class="fill" class:done style:width={`${progress * 100}%`} />
 </div>
 
 <style>
@@ -21,5 +21,9 @@
 		top: 0;
 		height: 100%;
 		transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+	}
+
+	.fill.done {
+		background: #35639b;
 	}
 </style>

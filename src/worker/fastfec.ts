@@ -1,19 +1,32 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-self.onmessage = function (e) {
+/* eslint-disable  @typescript-eslint/no-empty-function */
+
+self.onmessage = function (e: { data: { file: File } }) {
 	runFastFEC(e.data.file);
 };
 
-async function runFastFEC(file) {
-	const context = {};
+interface Context {
+	wasm?: {
+		instance: {
+			exports: {
+				memory: {
+					buffer: Buffer;
+				};
+				wasmFec: (number) => void;
+			};
+		};
+	};
+}
+
+async function runFastFEC(file: File) {
+	const context: Context = {};
 
 	let filePosition = 0;
 
-	function readString(location, maxBytes = null) {
+	function readString(location: number, maxBytes: number | null = null) {
 		let s = '';
 		let i = 0;
-		// eslint-disable-next-line no-constant-condition
 		while (true) {
-			const c = new Uint8Array(context.wasm.instance.exports.memory['buffer'])[location];
+			const c = new Uint8Array(context.wasm.instance.exports.memory.buffer)[location];
 			if (c == 0) return s;
 			s += String.fromCharCode(c);
 			location++;
@@ -24,9 +37,9 @@ async function runFastFEC(file) {
 		}
 	}
 
-	let fileProgress = {};
+	const fileProgress: { [key: string]: number } = {};
 
-	function write(filename, contents) {
+	function write(filename: string, contents: Uint8Array) {
 		self.postMessage({
 			type: 'write',
 			filename,
@@ -42,12 +55,11 @@ async function runFastFEC(file) {
 		});
 	}
 
-	// eslint-disable-next-line no-undef
 	const fileReader = new FileReaderSync();
 
 	const env = {
 		env: {
-			wasmBufferRead(buffer, want) {
+			wasmBufferRead(buffer: number, want: number) {
 				const contentsBuffer = fileReader.readAsArrayBuffer(
 					file.slice(filePosition, filePosition + want)
 				);
@@ -56,23 +68,23 @@ async function runFastFEC(file) {
 				const received = contents.length;
 				filePosition += received;
 
-				new Uint8Array(context.wasm.instance.exports.memory['buffer']).set(contents, buffer);
+				new Uint8Array(context.wasm.instance.exports.memory.buffer).set(contents, buffer);
 				return received;
 			},
 
-			wasmBufferWrite(filename, extension, contents, numBytes) {
+			wasmBufferWrite(filename: number, extension: number, contents: number, numBytes: number) {
 				self.postMessage({ pos: filePosition, len: file.size, fileProgress });
-				filename = readString(filename);
-				extension = readString(extension);
-				filename = filename + extension;
+				let filenameString = readString(filename);
+				const extensionString = readString(extension);
+				filenameString = filenameString + extensionString;
 
-				contents = new Uint8Array(context.wasm.instance.exports.memory['buffer']).slice(
+				const contentsArray = new Uint8Array(context.wasm.instance.exports.memory['buffer']).slice(
 					contents,
 					contents + numBytes
 				);
 
 				// Use atomics
-				write(filename, contents);
+				write(filenameString, contentsArray);
 			},
 
 			main() {}
@@ -126,7 +138,7 @@ async function runFastFEC(file) {
 		}
 	};
 
-	async function doWasm() {
+	async function doWasm(): Promise<WebAssembly.WebAssemblyInstantiatedSource> {
 		const response = await fetch('/fastfec/libfastfec-0.0.8.wasm');
 		const bytes = await response.arrayBuffer();
 		const app = WebAssembly.instantiate(bytes, env);
@@ -134,10 +146,12 @@ async function runFastFEC(file) {
 	}
 
 	const wasm = await doWasm();
-	context.wasm = wasm;
+	context.wasm = wasm as unknown as Context['wasm'];
 
 	// Initialize
 	const BUFFER_SIZE = 6553600;
-	wasm.instance.exports.wasmFec(BUFFER_SIZE);
+	context.wasm.instance.exports.wasmFec(BUFFER_SIZE);
 	done();
 }
+
+export {};
