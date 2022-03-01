@@ -83,7 +83,6 @@ async function runFastFEC(file: File) {
 					contents + numBytes
 				);
 
-				// Use atomics
 				write(filenameString, contentsArray);
 			},
 
@@ -139,7 +138,7 @@ async function runFastFEC(file: File) {
 	};
 
 	async function doWasm(): Promise<WebAssembly.WebAssemblyInstantiatedSource> {
-		const response = await fetch('/fastfec/libfastfec-0.0.8.wasm');
+		const response = await fetch('/fastfec/libfastfec-0.0.8-1.wasm');
 		const bytes = await response.arrayBuffer();
 		const app = WebAssembly.instantiate(bytes, env);
 		return app;

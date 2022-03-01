@@ -1,10 +1,10 @@
 import 'web-streams-polyfill/dist/polyfill.js';
-
 export class Writer {
 	public streamSaver;
-	public writers = {};
-	public lastFilename = null;
-	public closed: { [filename: string]: boolean } = {};
+	public writer;
+	public closed = false;
+
+	constructor(readonly filename: string) {}
 
 	async init() {
 		this.streamSaver = await import('streamsaver');
@@ -15,36 +15,15 @@ export class Writer {
 			// served via HTTPS)
 			this.streamSaver.default.mitm = '/fastfec/mitm.html';
 		}
+
+		this.writer = this.streamSaver.createWriteStream(this.filename).getWriter();
 	}
 
-	closeFilename(filename: string) {
-		if (filename == null) return;
-		if (this.closed[filename]) {
-			// Already closed
-			return;
-		}
-		this.closed[filename] = true;
-		this.writers[filename].close();
-	}
-
-	writeFile(filename: string, contents: Uint8Array) {
-		if (filename != this.lastFilename) {
-			this.closeFilename(this.lastFilename);
-			this.lastFilename = filename;
-		}
-
-		let writer = this.writers[filename];
-		if (writer == null) {
-			writer = this.streamSaver.createWriteStream(filename).getWriter();
-			this.writers[filename] = writer;
-		}
-
-		writer.write(contents);
+	write(contents: Uint8Array) {
+		this.writer.write(contents);
 	}
 
 	close() {
-		for (const filename of Object.keys(this.writers)) {
-			this.closeFilename(filename);
-		}
+		this.writer.close();
 	}
 }
