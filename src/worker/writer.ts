@@ -1,4 +1,5 @@
 import 'web-streams-polyfill/dist/polyfill.js';
+
 export class Writer {
 	public streamSaver;
 	public writer;

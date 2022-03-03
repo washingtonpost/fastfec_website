@@ -1,15 +1,19 @@
 // Adapted from https://raw.githubusercontent.com/jimmywarting/StreamSaver.js/master/examples/zip-stream.js
 
+import { writeUInt64LE, writeUInt64BE } from './int53';
 import { Writer } from './writer';
 
 const encoder = new TextEncoder();
 
-interface Data {
+const VERSION = 0x002d;
+const BIT_FLAG = 0x0808;
+
+export interface Data {
 	array: Uint8Array;
 	view: DataView;
 }
 
-function getDataHelper(byteLength: number): Data {
+export function getDataHelper(byteLength: number): Data {
 	const uint8 = new Uint8Array(byteLength);
 	return {
 		array: uint8,
@@ -72,46 +76,65 @@ export class ZipObject {
 		this.nameBuf = encoder.encode(filename);
 		this.comment = encoder.encode('');
 		this.header = getDataHelper(26);
-		this.data = getDataHelper(30 + this.nameBuf.length);
+		this.data = getDataHelper(58 + this.nameBuf.length);
 		this.writeHeader();
 	}
 
 	writeHeader() {
-		if (this.level !== 0 && !this.directory) {
-			this.header.view.setUint16(4, 0x0800);
-		}
-		this.header.view.setUint32(0, 0x14000808);
-		this.header.view.setUint16(
-			6,
-			(((this.date.getHours() << 6) | this.date.getMinutes()) << 5) | (this.date.getSeconds() / 2),
-			true
+		// local file header signature     4 bytes
+		this.zipWriter.writeSignature(0x04034b50);
+		// version needed to extract       2 bytes
+		this.zipWriter.writeUint16(VERSION); // version 4.5
+		// general purpose bit flag        2 bytes
+		//   - (bit 3) sizes zero in local header, in data descriptor following
+		//   - (bit 11) utf-8 encoding for filenames/comments
+		this.zipWriter.writeUint16(BIT_FLAG);
+		// compression method              2 bytes
+		this.zipWriter.writeUint16(0); // stored
+		// last mod file time              2 bytes
+		this.zipWriter.writeUint16(
+			(((this.date.getHours() << 6) | this.date.getMinutes()) << 5) | (this.date.getSeconds() / 2)
 		);
-		this.header.view.setUint16(
-			8,
+		// last mod file date              2 bytes
+		this.zipWriter.writeUint16(
 			((((this.date.getFullYear() - 1980) << 4) | (this.date.getMonth() + 1)) << 5) |
-				this.date.getDate(),
-			true
+				this.date.getDate()
 		);
-		this.header.view.setUint16(22, this.nameBuf.length, true);
-		this.data.view.setUint32(0, 0x504b0304);
-		this.data.array.set(this.header.array, 4);
-		this.data.array.set(this.nameBuf, 30);
-		// Write header to zip file
-		this.zipWriter.write(this.data.array);
+		// crc-32                          4 bytes
+		this.zipWriter.writeUint32(0); // saved for later
+		// compressed size                 4 bytes
+		this.zipWriter.writeUint32(0xffffffff); // saved for later
+		// uncompressed size               4 bytes
+		this.zipWriter.writeUint32(0xffffffff); // saved for later
+		// file name length                2 bytes
+		this.zipWriter.writeUint16(this.nameBuf.length);
+		// extra field length              2 bytes
+		this.zipWriter.writeUint16(32); // was 32
+		// filename (variable size)
+		this.zipWriter.write(this.nameBuf);
+
+		// EXTRA FIELD for ZIP64 (32 bytes)
+		// extra field header ID           2 bytes
+		this.zipWriter.writeUint16(0x0001); // Zip64
+		// size of extra field             2 bytes
+		this.zipWriter.writeUint16(28);
+		// Original uncompressed file size 8 bytes
+		this.zipWriter.writeUint64(0); // saved for later
+		// Size of compressed data         8 bytes
+		this.zipWriter.writeUint64(0); // saved for later
+		// Offset of local header record   8 bytes
+		this.zipWriter.writeUint64(this.offset);
+		// Disk start number               4 bytes
+		this.zipWriter.writeUint32(0);
 	}
 
-	writeFooter() {
-		const footer = getDataHelper(16);
-		footer.view.setUint32(0, 0x504b0708);
-
-		this.header.view.setUint32(10, this.crc.get(), true);
-		this.header.view.setUint32(14, this.compressedLength, true);
-		this.header.view.setUint32(18, this.uncompressedLength, true);
-		footer.view.setUint32(4, this.crc.get(), true);
-		footer.view.setUint32(8, this.compressedLength, true);
-		footer.view.setUint32(12, this.uncompressedLength, true);
-
-		this.zipWriter.write(footer.array);
+	writeDataDescriptor() {
+		// crc-32                          4 bytes
+		this.zipWriter.writeUint32(this.crc.get());
+		// compressed size                 8 bytes since ZIP64
+		this.zipWriter.writeUint64(this.compressedLength);
+		// uncompressed size               8 bytes since ZIP64
+		this.zipWriter.writeUint32(this.uncompressedLength);
 	}
 
 	write(content: Uint8Array) {
@@ -140,20 +163,32 @@ export class ZipWriter {
 
 	closeCurrent() {
 		if (this.currentFilename != null) {
-			this.files[this.currentFilename].writeFooter();
+			this.currentZip.writeDataDescriptor();
 		}
 		this.currentFilename = null;
 	}
 
 	createNewFile(filename: string) {
 		filename = filename.replace('/', '-'); // normalize file name
-		if (this.files[filename] != null) {
-			throw new Error('File already exists');
+		const baseFilename = filename;
+		let part = 2;
+		while (this.files[filename] != null) {
+			// Rename if name collision
+			const dotIndex = filename.lastIndexOf('.');
+			if (dotIndex == -1) {
+				// No extension: just add partN
+				filename = `${baseFilename}_part${part++}`;
+			} else {
+				// Add partN before the dot
+				filename = `${baseFilename.substring(0, dotIndex)}_part${part++}${baseFilename.substring(
+					dotIndex
+				)}`;
+			}
 		}
 
 		this.closeCurrent();
+		this.currentFilename = baseFilename;
 		this.currentZip = new ZipObject(filename, this);
-		this.currentFilename = filename;
 		this.files[filename] = this.currentZip;
 		this.filenames.push(filename);
 	}
@@ -166,6 +201,41 @@ export class ZipWriter {
 		this.offset += data.length;
 	}
 
+	writeUint8(uint8: number) {
+		const data = getDataHelper(1);
+		data.view.setUint8(0, uint8);
+		this.write(data.array);
+	}
+
+	writeUint16(uint16: number, littleEndian = true) {
+		const data = getDataHelper(2);
+		data.view.setUint16(0, uint16, littleEndian);
+		this.write(data.array);
+	}
+
+	writeUint32(uint32: number, littleEndian = true) {
+		const data = getDataHelper(4);
+		data.view.setUint32(0, uint32, littleEndian);
+		this.write(data.array);
+	}
+
+	writeSignature(uint32: number, littleEndian = true) {
+		const data = getDataHelper(4);
+		data.view.setUint32(0, uint32, littleEndian);
+		this.write(data.array);
+	}
+
+	writeUint64(uint64: number, littleEndian = true) {
+		const data = getDataHelper(8);
+
+		if (littleEndian) {
+			writeUInt64LE(uint64, data.view, 0);
+		} else {
+			writeUInt64BE(uint64, data.view, 0);
+		}
+		this.write(data.array);
+	}
+
 	push(filename: string, content: Uint8Array) {
 		if (filename != this.currentFilename) {
 			this.createNewFile(filename);
@@ -174,38 +244,155 @@ export class ZipWriter {
 		this.currentZip.write(content);
 	}
 
+	writeCentralDirectory(): number {
+		const startOffset = this.offset;
+		for (const filename of this.filenames) {
+			const zipObject = this.files[filename];
+
+			// local file header signature     4 bytes
+			this.writeSignature(0x02014b50);
+			// version made by                 2 bytes
+			this.writeUint16(VERSION); // version 4.5
+			// version needed to extract       2 bytes
+			this.writeUint16(VERSION); // version 4.5
+			// general purpose bit flag        2 bytes
+			//   - (bit 3) sizes zero in local header, in data descriptor following
+			//   - (bit 11) utf-8 encoding for filenames/comments
+			this.writeUint16(BIT_FLAG);
+			// compression method              2 bytes
+			this.writeUint16(0); // stored
+			// last mod file time              2 bytes
+			this.writeUint16(
+				(((zipObject.date.getHours() << 6) | zipObject.date.getMinutes()) << 5) |
+					(zipObject.date.getSeconds() / 2)
+			);
+			// last mod file date              2 bytes
+			this.writeUint16(
+				((((zipObject.date.getFullYear() - 1980) << 4) | (zipObject.date.getMonth() + 1)) << 5) |
+					zipObject.date.getDate()
+			);
+			// crc-32                          4 bytes
+			this.writeUint32(zipObject.crc.get());
+			// compressed size                 4 bytes
+			this.writeUint32(0xffffffff); // saved for later
+			// uncompressed size               4 bytes
+			this.writeUint32(0xffffffff); // saved for later
+			// file name length                2 bytes
+			this.writeUint16(zipObject.nameBuf.length);
+			// extra field length              2 bytes
+			this.writeUint16(32);
+			// file comment length             2 bytes
+			this.writeUint16(0);
+			// disk number start               2 bytes
+			this.writeUint16(0xffff);
+			// internal file attributes        2 bytes
+			this.writeUint16(0);
+			// external file attributes        4 bytes
+			this.writeUint32(0);
+			// relative offset of local header 4 bytes
+			this.writeUint32(0xffffffff); // saved for later
+			// filename (variable size)
+			this.write(zipObject.nameBuf);
+
+			// EXTRA FIELD for ZIP64 (32 bytes)
+			// extra field header ID           2 bytes
+			this.writeUint16(0x0001); // Zip64
+			// size of extra field             2 bytes
+			this.writeUint16(28);
+			// Original uncompressed file size 8 bytes
+			this.writeUint64(zipObject.uncompressedLength);
+			// Size of compressed data         8 bytes
+			this.writeUint64(zipObject.compressedLength);
+			// Offset of local header record   8 bytes
+			this.writeUint64(zipObject.offset);
+			// Disk start number               4 bytes
+			this.writeUint32(0);
+		}
+		return this.offset - startOffset;
+	}
+
+	writeZip64EndOfCentralDirectoryRecord(
+		centralDirectoryOffset: number,
+		centralDirectorySize: number
+	) {
+		const zip64EndOfCentralDirectorySize = 44;
+
+		// zip64 end of central dir
+		// signature                       4 bytes  (0x06064b50)
+		this.writeSignature(0x06064b50);
+		// size of zip64 end of central
+		// directory record                8 bytes
+		this.writeUint64(zip64EndOfCentralDirectorySize);
+		// version made by                 2 bytes
+		this.writeUint16(VERSION); // version 4.5
+		// version needed to extract       2 bytes
+		this.writeUint16(VERSION); // version 4.5
+		// number of this disk             4 bytes
+		this.writeUint32(0);
+		// number of the disk with the
+		// start of the central directory  4 bytes
+		this.writeUint32(0);
+		// total number of entries in the
+		// central directory on this disk  8 bytes
+		this.writeUint64(this.filenames.length);
+		// total number of entries in the
+		// central directory               8 bytes
+		this.writeUint64(this.filenames.length);
+		// size of the central directory   8 bytes
+		this.writeUint64(centralDirectorySize);
+		// offset of start of central
+		// directory with respect to
+		// the starting disk number        8 bytes
+		this.writeUint64(centralDirectoryOffset);
+	}
+
+	writeZip64EndOfCentralDirectoryLocator(zip64EndOfCentralDirectoryOffset: number) {
+		// zip64 end of central dir locator
+		// signature                       4 bytes  (0x07064b50)
+		this.writeSignature(0x07064b50);
+		// number of the disk with the
+		// start of the zip64 end of
+		// central directory               4 bytes
+		this.writeUint32(0);
+		// relative offset of the zip64
+		// end of central directory record 8 bytes
+		this.writeUint64(zip64EndOfCentralDirectoryOffset);
+		// total number of disks           4 bytes
+		this.writeUint32(1);
+	}
+
+	writeEndOfCentralDirectoryRecord() {
+		// end of central dir signature    4 bytes  (0x06054b50)
+		this.writeSignature(0x06054b50);
+		// number of this disk             2 bytes
+		this.writeUint16(0xffff);
+		// number of the disk with the
+		// start of the central directory  2 bytes
+		this.writeUint16(0xffff);
+		// total number of entries in the
+		// central directory on this disk  2 bytes
+		this.writeUint16(0xffff);
+		// total number of entries in
+		// the central directory           2 bytes
+		this.writeUint16(0xffff);
+		// size of the central directory   4 bytes
+		// offset of start of central
+		// directory with respect to
+		this.writeUint32(0xffffffff);
+		// the starting disk number        4 bytes
+		this.writeUint32(0xffffffff);
+		// .ZIP file comment length        2 bytes
+		this.writeUint16(0);
+	}
+
 	closeZip() {
-		let length = 0;
-		let index = 0;
-		let indexFilename: number;
-		let file: ZipObject;
-		for (indexFilename = 0; indexFilename < this.filenames.length; indexFilename++) {
-			file = this.files[this.filenames[indexFilename]];
-			length += 46 + file.nameBuf.length + file.comment.length;
-		}
-		const data = getDataHelper(length + 22);
-		for (indexFilename = 0; indexFilename < this.filenames.length; indexFilename++) {
-			file = this.files[this.filenames[indexFilename]];
-			data.view.setUint32(index, 0x504b0102);
-			data.view.setUint16(index + 4, 0x1400);
-			data.array.set(file.header.array, index + 6);
-			data.view.setUint16(index + 32, file.comment.length, true);
-			if (file.directory) {
-				data.view.setUint8(index + 38, 0x10);
-			}
-			data.view.setUint32(index + 42, file.offset, true);
-			data.array.set(file.nameBuf, index + 46);
-			data.array.set(file.comment, index + 46 + file.nameBuf.length);
-			index += 46 + file.nameBuf.length + file.comment.length;
-		}
-		// End of central directory record
-		data.view.setUint32(index, 0x504b0506);
-		data.view.setUint16(index + 6, 8);
-		data.view.setUint16(index + 8, this.filenames.length, true);
-		data.view.setUint16(index + 10, this.filenames.length, true);
-		data.view.setUint32(index + 12, length, true);
-		data.view.setUint32(index + 16, this.offset, true);
-		this.writer.write(data.array);
+		const centralDirectoryOffset = this.offset;
+		const centralDirectorySize = this.writeCentralDirectory();
+		const zip64EndOfCentralDirectoryOffset = this.offset;
+		this.writeZip64EndOfCentralDirectoryRecord(centralDirectoryOffset, centralDirectorySize);
+		this.writeZip64EndOfCentralDirectoryLocator(zip64EndOfCentralDirectoryOffset);
+		this.writeEndOfCentralDirectoryRecord();
+
 		this.writer.close();
 	}
 
