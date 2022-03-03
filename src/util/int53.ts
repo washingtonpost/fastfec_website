@@ -18,13 +18,13 @@ export function uintHighLow(number: number): [number, number] {
 	return [high, low];
 }
 
-export function writeUInt64LE(number: number, buffer: DataView, offset: number = 0) {
+export function writeUInt64LE(number: number, buffer: DataView, offset = 0) {
 	const hl = uintHighLow(number);
 	buffer.setUint32(offset, hl[1], true);
 	buffer.setUint32(offset + 4, hl[0], true);
 }
 
-export function writeUInt64BE(number: number, buffer: DataView, offset: number = 0) {
+export function writeUInt64BE(number: number, buffer: DataView, offset = 0) {
 	const hl = uintHighLow(number);
 	buffer.setUint32(offset + 4, hl[0], false);
 	buffer.setUint32(offset, hl[1], false);

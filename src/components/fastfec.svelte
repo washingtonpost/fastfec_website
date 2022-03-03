@@ -6,7 +6,7 @@
 	import Tabs from './tabs.svelte';
 	import Progress from './progress.svelte';
 	import FastFECWorker from '../worker/fastfec?worker';
-	import { ZipWriter } from '../worker/zip';
+	import { ZipWriter } from '../util/zip';
 
 	interface WriteMessage {
 		type: 'write';

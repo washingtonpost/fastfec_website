@@ -22,7 +22,7 @@ export function getDataHelper(byteLength: number): Data {
 }
 
 class Crc32 {
-	public crc: number = -1;
+	public crc = -1;
 	public table: number[];
 
 	getTable(): number[] {
