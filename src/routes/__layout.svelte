@@ -1,3 +1,7 @@
+<script lang="ts">
+	import { assets } from '$app/paths';
+</script>
+
 <svelte:head>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
@@ -5,7 +9,7 @@
 </svelte:head>
 
 <div class="logo">
-	<img alt="FastFEC logo" src="fastfec.png" />
+	<img alt="FastFEC logo" src={`${assets}/fastfec.png`} />
 </div>
 
 <slot />

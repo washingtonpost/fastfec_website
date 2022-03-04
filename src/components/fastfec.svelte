@@ -7,6 +7,7 @@
 	import FastFECWorker from '../worker/fastfec?worker';
 	import { ZipWriter } from '../util/zip';
 	import { createEventDispatcher } from 'svelte';
+	import { assets } from '$app/paths';
 
 	const dispatch = createEventDispatcher();
 
@@ -86,7 +87,7 @@
 			// Create a web worker and run FastFEC
 			const worker = new FastFECWorker();
 			worker.addEventListener('message', handleMessage);
-			worker.postMessage({ file: files[0] });
+			worker.postMessage({ file: files[0], assets });
 
 			dispatch('processing');
 		}

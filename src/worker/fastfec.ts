@@ -1,7 +1,7 @@
 /* eslint-disable  @typescript-eslint/no-empty-function */
 
-self.onmessage = function (e: { data: { file: File } }) {
-	runFastFEC(e.data.file);
+self.onmessage = function (e: { data: { file: File; assets: string } }) {
+	runFastFEC(e.data.file, e.data.assets);
 };
 
 interface Context {
@@ -17,7 +17,7 @@ interface Context {
 	};
 }
 
-async function runFastFEC(file: File) {
+async function runFastFEC(file: File, assets: string) {
 	const context: Context = {};
 
 	let filePosition = 0;
@@ -137,14 +137,14 @@ async function runFastFEC(file: File) {
 		}
 	};
 
-	async function doWasm(): Promise<WebAssembly.WebAssemblyInstantiatedSource> {
-		const response = await fetch('/fastfec/libfastfec-0.0.8-1.wasm');
+	async function doWasm(assets: string): Promise<WebAssembly.WebAssemblyInstantiatedSource> {
+		const response = await fetch(`${assets}/fastfec/libfastfec-0.0.8-1.wasm`);
 		const bytes = await response.arrayBuffer();
 		const app = WebAssembly.instantiate(bytes, env);
 		return app;
 	}
 
-	const wasm = await doWasm();
+	const wasm = await doWasm(assets);
 	context.wasm = wasm as unknown as Context['wasm'];
 
 	// Initialize
