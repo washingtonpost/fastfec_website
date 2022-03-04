@@ -7,7 +7,6 @@
 	const dispatch = createEventDispatcher();
 
 	export let rows: string[][];
-	export let done = false;
 	export let demo = false;
 
 	export const ROWS_TO_SHOW = 10;
@@ -256,7 +255,6 @@
 			: 's'}{showRows.length == rows.length
 			? ''
 			: ` out of ${rows.length}${rows.length == 100 ? '+' : ''}`}
-		{#if done}<button>Download all (.zip)</button>{/if}
 	</div>
 	{#if asCsv}
 		<div bind:this={csvElem} class="csv">
@@ -328,15 +326,5 @@
 		color: gray;
 		font-size: 12px;
 		margin: 0 0 9px 0;
-	}
-
-	button {
-		background: rgb(233, 233, 233);
-		color: #35639b;
-		border-radius: 10px;
-		padding: 2px 8px;
-		border: none;
-		font-size: 12px;
-		margin: 0 5px;
 	}
 </style>

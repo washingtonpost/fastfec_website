@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { CSVReader } from '../util/csv';
 
-	import { onMount } from 'svelte';
 	import FECTable from './fectable.svelte';
 	import Tabs from './tabs.svelte';
 	import Progress from './progress.svelte';
 	import FastFECWorker from '../worker/fastfec?worker';
 	import { ZipWriter } from '../util/zip';
+	import { createEventDispatcher } from 'svelte';
+
+	const dispatch = createEventDispatcher();
 
 	interface WriteMessage {
 		type: 'write';
@@ -29,7 +31,7 @@
 
 	type Message = WriteMessage | ProgressMessage | DoneMessage;
 
-	const csvs: { [filename: string]: CSVReader } = {};
+	let csvs: { [filename: string]: CSVReader } = {};
 
 	let progress = 0;
 	let done = false;
@@ -70,6 +72,10 @@
 	async function handleFiles(e: Event) {
 		const files = (<HTMLInputElement>e.target).files;
 		if (files.length == 1) {
+			csvs = {};
+			progress = 0;
+			done = false;
+
 			// Extract the prefix
 			const prefix = getPrefix(files[0]);
 
@@ -81,23 +87,13 @@
 			const worker = new FastFECWorker();
 			worker.addEventListener('message', handleMessage);
 			worker.postMessage({ file: files[0] });
+
+			dispatch('processing');
 		}
 	}
-
-	onMount(async () => {
-		// const request = await fetch('/fastfec/13425.fec');
-		// const request = await fetch('/fastfec/1500199.fec');
-		// const request = await fetch('/fastfec/1482832.fec');
-		// const buffer = await request.arrayBuffer();
-		// console.log('GOT', buffer);
-		// // Create a web worker
-		// const worker = new Worker('/fastfec/worker.js');
-		// worker.addEventListener('message', handleMessage);
-		// worker.postMessage({ file: new Blob([buffer]) });
-	});
 </script>
 
-<input on:input={handleFiles} type="file" />
+<input on:input={handleFiles} accept=".fec" type="file" />
 
 <Tabs dict={csvs} component={FECTable} accessor={(x) => ({ rows: x.rows })} extraProps={{ done }}>
 	<Progress {progress} {done} />

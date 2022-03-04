@@ -13,6 +13,15 @@
 <style>
 	:global(body) {
 		font-family: 'Barlow', sans-serif;
+		margin: 1em 2em 3em 2em;
+	}
+
+	:global(p, h1, h2, h3, h4, ul, li) {
+		max-width: 650px;
+	}
+
+	:global(code) {
+		color: #a93b30;
 	}
 
 	img {
@@ -20,6 +29,6 @@
 	}
 
 	.logo {
-		margin: 12px 0;
+		margin: 25px -5px;
 	}
 </style>

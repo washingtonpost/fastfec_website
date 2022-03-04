@@ -19,7 +19,7 @@
 <style>
 	.demo {
 		height: 200px;
-		overflow-y: auto;
+		overflow-y: hidden;
 		box-shadow: 0 0 2px rgba(0, 0, 0, 0.12);
 	}
 </style>
