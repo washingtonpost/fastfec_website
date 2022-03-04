@@ -2,9 +2,13 @@
 	import { onMount } from 'svelte';
 	import { animating, getTableId, tableAnimations } from './tablelock';
 	import { cubicInOut } from 'svelte/easing';
+	import { createEventDispatcher } from 'svelte';
+
+	const dispatch = createEventDispatcher();
 
 	export let rows: string[][];
 	export let done = false;
+	export let demo = false;
 
 	export const ROWS_TO_SHOW = 10;
 
@@ -13,9 +17,11 @@
 	let asCsv = true;
 	let csvElem: HTMLDivElement;
 	let tableElem: HTMLTableElement;
+	let containerElem: HTMLDivElement;
 	let createdElements: HTMLElement[] = [];
 
 	const INITIAL_DELAY = 500;
+	const FINAL_DELAY = 2000;
 	const ROW_DELAY = 50;
 	const COMMA_FADE = 300;
 	const FIELD_MOVE = 600;
@@ -198,6 +204,23 @@
 
 		// Remove the current table id
 		tableAnimations.update(($tables) => $tables.filter((id) => id != tableId));
+
+		if (demo) {
+			// Wait and then dissolve
+			await transition(EASING, [], FINAL_DELAY);
+			await transition(EASING, [
+				{
+					elements: [containerElem],
+					delay: 0,
+					duration: 1000,
+					start: 1,
+					end: 0,
+					style: 'opacity',
+					toString: (x) => `${x}`
+				}
+			]);
+		}
+		dispatch('animated');
 	}
 
 	onMount(() => {
@@ -226,7 +249,7 @@
 	});
 </script>
 
-<div class="container">
+<div class="container" bind:this={containerElem}>
 	<div class="message">
 		Showing {showRows.length == rows.length ? 'all ' : ''}{showRows.length} row{showRows.length == 1
 			? ''

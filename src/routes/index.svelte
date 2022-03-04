@@ -1,8 +1,10 @@
 <script lang="ts">
+	import Demo from '../components/demo.svelte';
 	import FastFEC from '../components/fastfec.svelte';
 </script>
 
-<FastFEC />
+<!-- <FastFEC /> -->
+<Demo />
 
 <p>
 	Source code: <a href="https://github.com/washingtonpost/FastFEC" target="_blank"
