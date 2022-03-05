@@ -9,7 +9,9 @@
 </svelte:head>
 
 <div class="logo">
-	<img alt="FastFEC logo" src={`${assets}/fastfec.png`} />
+	<a href={assets}>
+		<img alt="FastFEC logo" src={`${assets}/fastfec.png`} />
+	</a>
 </div>
 
 <slot />
@@ -20,7 +22,7 @@
 		margin: 1em 2em 3em 2em;
 	}
 
-	:global(p, h1, h2, h3, h4, ul, li) {
+	:global(p, h1, h2, h3, h4, ul, li, fieldset) {
 		max-width: 650px;
 	}
 
@@ -34,5 +36,11 @@
 
 	.logo {
 		margin: 25px -5px;
+	}
+
+	:global(fieldset) {
+		margin: 1em 0;
+		font-size: 14px;
+		border: solid 1px gainsboro;
 	}
 </style>

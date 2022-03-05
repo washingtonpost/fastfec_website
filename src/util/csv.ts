@@ -13,8 +13,14 @@ export class CSVReader {
 	public startOfField = true;
 	public startOfLine = true;
 	public checkEscape = false;
+	public bytes = 0;
 
 	constructor(readonly cutoffRows: number | null = null) {}
+
+	estimatedRows(totalFileBytes: number): number {
+		if (this.bytes == 0) return 0;
+		return (this.rows.length / this.bytes) * totalFileBytes;
+	}
 
 	resetField() {
 		this.currentField = '';
@@ -45,6 +51,7 @@ export class CSVReader {
 	}
 
 	readChar(c: string) {
+		this.bytes++;
 		// Read a single character and process it
 		if (this.startOfField) {
 			if (c == ',') {

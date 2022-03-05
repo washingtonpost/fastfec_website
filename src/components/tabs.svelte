@@ -17,7 +17,9 @@
 
 <div class="tabs">
 	{#each keys as key}
-		<div class="tab" class:selected={selected == key} on:click={() => (selected = key)}>{key}</div>
+		<div class="tab" class:selected={selected == key} on:click={() => (selected = key)}>
+			<slot name="tabname" {key}>{key}</slot>
+		</div>
 	{/each}
 </div>
 <slot />

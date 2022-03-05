@@ -12,7 +12,7 @@
 
 <div class="demo">
 	{#key form}
-		<FECTable rows={form} demo={true} on:animated={nextForm} />
+		<FECTable cutoffRows={100} rows={form} demo={true} on:animated={nextForm} />
 	{/key}
 </div>
 

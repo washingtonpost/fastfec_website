@@ -2,10 +2,9 @@
 	import { onMount } from 'svelte';
 
 	import Demo from '../components/demo.svelte';
-	import FastFEC from '../components/fastfec.svelte';
+	import { assets } from '$app/paths';
 
 	let os = 'linux';
-	let hideDemo = false;
 
 	onMount(() => {
 		// Get OS
@@ -17,9 +16,7 @@
 
 <p>FastFEC is a command-line tool and library for parsing .fec files quickly written in C.</p>
 
-{#if !hideDemo}
-	<Demo />
-{/if}
+<Demo />
 
 <h2>Demo</h2>
 
@@ -27,7 +24,8 @@
 	Upload a .fec file to parse it and download a zip of .csv files entirely in-browser using
 	WebAssembly.
 </p>
-<FastFEC on:processing={() => (hideDemo = true)} />
+
+<p><a href={`${assets}/demo`}>View demo ≫</a></p>
 
 <h2>Installation</h2>
 
