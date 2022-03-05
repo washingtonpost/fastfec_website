@@ -13,7 +13,8 @@ const config = {
 		}),
 		paths: {
 			base: '/fastfec'
-		}
+		},
+		trailingSlash: 'always'
 	}
 };
 
