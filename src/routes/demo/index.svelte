@@ -1,6 +1,6 @@
 <script lang="ts">
-	import FastFEC from '../components/fastfec.svelte';
-	import { localGetBool, localSet } from '../util/local';
+	import FastFEC from '../../components/fastfec.svelte';
+	import { localGetBool, localSet } from '../../util/local';
 
 	const AUTO_DOWNLOAD = 'autodownload';
 	const SHOULD_ANIMATE = 'shouldanimate';
