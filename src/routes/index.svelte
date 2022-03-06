@@ -158,6 +158,19 @@ View instructions:
 	<li>1m 42s</li>
 </ul>
 
+<h4>Presentation slides</h4>
+
+<p>
+	We presented FastFEC at <a
+		href="https://www.ire.org/training/conferences/nicar-2022/"
+		target="_blank">NICAR 2022</a
+	>. You can view the slides
+	<a
+		href="https://docs.google.com/presentation/d/14kYmNsK4vf2hoy2h2_2rw0zyqhgTExhhTBk3JGCKqiY/edit?usp=sharing"
+		target="_blank">here</a
+	>.
+</p>
+
 <h4>Source code</h4>
 <p>
 	<a href="https://github.com/washingtonpost/FastFEC" target="_blank"
