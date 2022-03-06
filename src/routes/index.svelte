@@ -84,9 +84,22 @@ View instructions:
 	</ul>
 {/if}
 
-<h2>Usage</h2>
+<h2>Python library</h2>
+
 <p>
-	Once FastFEC has been installed, you can run the program by calling <code>fastfec</code> in your terminal:
+	FastFEC is available as an installable <a href="https://pypi.org/project/fastfec/" target="_blank"
+		>Python library</a
+	>.
+	<code>pip install fastfec</code>
+	to get started. Learn more
+	<a href="https://github.com/washingtonpost/FastFEC/tree/develop/python" target="_blank">here</a>.
+</p>
+
+<h2>Command-line usage</h2>
+<p>
+	Once FastFEC has been installed and is in your path, you can run the program by calling <code
+		>fastfec</code
+	> in your terminal:
 </p>
 <pre><code
 		>Usage: fastfec [flags] &lt;id, file, or url&gt; [output directory=output] [override id]
