@@ -65,13 +65,13 @@ View instructions:
 	Download the appropriate release:
 	<ul>
 		<li>
-			Windows x86 (most systems)<a
+			Windows x86 (most systems): <a
 				href="https://github.com/washingtonpost/FastFEC/releases/download/0.2.0/fastfec-windows-x86_64-0.2.0.zip"
 				>fastfec-windows-x86_64-0.2.0.zip</a
 			> (276 KB)
 		</li>
 		<li>
-			Windows ARM<a
+			Windows ARM: <a
 				href="https://github.com/washingtonpost/FastFEC/releases/download/0.2.0/fastfec-windows-aarch64-0.2.0.zip"
 				>fastfec-windows-aarch64-0.2.0.zip</a
 			> (348 KB)
@@ -87,13 +87,13 @@ View instructions:
 		<ul>
 			Download the appropriate release:
 			<li>
-				Linux x86 (most systems)<a
+				Linux x86 (most systems): <a
 					href="https://github.com/washingtonpost/FastFEC/releases/download/0.2.0/fastfec-linux-gnu-x86_64-0.2.0.zip"
 					>fastfec-linux-gnu-x86_64-0.2.0.zip</a
 				> (291 KB)
 			</li>
 			<li>
-				Linux ARM<a
+				Linux ARM: <a
 					href="https://github.com/washingtonpost/FastFEC/releases/download/0.2.0/fastfec-linux-gnu-aarch64-0.2.0.zip"
 					>fastfec-linux-gnu-aarch64-0.2.0.zip</a
 				> (378 KB)
