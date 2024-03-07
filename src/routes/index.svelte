@@ -84,8 +84,8 @@ View instructions:
 			If you have <a href="https://brew.sh/" target="_blank">Homebrew</a> installed:
 			<pre>brew install fastfec</pre>
 		</li>
+		<li>Download the appropriate release:</li>
 		<ul>
-			Download the appropriate release:
 			<li>
 				Linux x86 (most systems): <a
 					href="https://github.com/washingtonpost/FastFEC/releases/download/0.2.0/fastfec-linux-gnu-x86_64-0.2.0.zip"
